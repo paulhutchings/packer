@@ -1,0 +1,7 @@
+*.img
+*.iso
+
+*.pub
+
+**/cache/
+
