@@ -1,0 +1,36 @@
+{
+    "description": "Builds images for raspberry pi",
+    "variables": {
+        "image": "",
+        "checksum": "none",
+        "ssh_key": "rpi.pub",
+        "ip_address": "10.0.74.74/16",
+        "gateway": "10.0.1.1",
+        "dns_server": "10.0.1.1",
+        "timezone": "America/New_York",
+        "mount_path": "/tmp/rpi",
+        "password":""
+    },
+    "builders": [
+        {
+            "type": "arm-image",
+            "iso_url": "{{user `image`}}",
+            "iso_checksum": "{{user `checksum`}}",
+            "output_filename": "./output/rpi.img",
+            "target_image_size": 2147483648,
+            "mount_path": "{{user `mount_path`}}"
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "ansible",
+            "playbook_file": "playbook.yml",
+            "extra_arguments": [
+                "--connection",
+                "chroot",
+                "--extra-vars",
+                "ansible_ssh_host={{user `mount_path`}} password={{user `password`}} ssh_key={{user `ssh_key`}} ip_address={{user `ip_address`}} gateway={{user `gateway`}} dns_server={{user `dns_server`}} timezone={{user `timezone`}}"
+            ]
+        }
+    ]
+}

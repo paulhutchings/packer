@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  packer:
+    image: packer-arm-ansible
+    container_name: packer-arm-ansible
+    volumes:
+      - /dev:/dev
+      - ${PWD}:/build:ro
+      - ${PWD}/cache:/build/cache
+      - ${PWD}/output:/build/output
+    environment:
+      PACKER_CACHE_DIR: /build/cache
+    privileged: true

@@ -1,0 +1,80 @@
+---
+- name: Raspberry Pi
+  hosts: all
+  become: true
+  tasks:
+    - name: Enable ssh on boot
+      ansible.builtin.file:
+        path: /boot/ssh
+        state: touch
+
+    - name: Enable serial console on boot
+      ansible.builtin.lineinfile:
+        path: /boot/config.txt
+        line: enable_uart=1
+
+    - name: Create ~/.ssh directory
+      ansible.builtin.file:
+        path: /home/pi/.ssh
+        state: directory
+        owner: pi
+        group: pi
+        recurse: yes
+        mode: '0700'
+
+    - name: Add ssh key
+      ansible.builtin.copy:
+        src: "./files/{{ ssh_key }}"
+        dest: /home/pi/.ssh/authorized_keys
+        owner: pi
+        group: pi
+        mode: '0600'
+    
+    - name: Disable password ssh
+      ansible.builtin.replace:
+        path: /etc/ssh/sshd_config
+        regexp: '#PasswordAuthentication.*'
+        replace: PasswordAuthentication no
+
+    - name: Upgrade packages
+      ansible.builtin.apt:
+        upgrade: yes
+        allow_downgrade: yes
+        autoremove: yes
+        update_cache: yes
+  
+    - name: Install packages
+      ansible.builtin.apt:
+        name:
+          - apcupsd
+          - docker.io
+          - docker-compose
+
+    - name: Add pi user to docker group
+      ansible.builtin.user:
+        name: pi
+        groups: docker
+        append: yes
+        password: "{{ password | password_hash('sha512') }}"
+
+    - name: Add network configuration
+      ansible.builtin.template:
+        src: ./files/dhcpcd.conf.j2
+        dest: /etc/dhcpcd.conf
+
+    - name: Add apcupsd configuration
+      ansible.builtin.template:
+        src: ./files/apcupsd.conf.j2
+        dest: /etc/apcupsd/apcupsd.conf
+
+    - name: Update hostname
+      ansible.builtin.command: raspi-config nonint do_hostname 
+    
+    - name: Update locales
+      ansible.builtin.command: raspi-config nonint do_change_locale en_US.UTF-8
+
+    - name: Update keyboard
+      ansible.builtin.command: raspi-config nonint do_configure_keyboard us
+
+    - name: Update timezone
+      ansible.builtin.command: "raspi-config nonint do_change_timezone {{ timezone }}"
